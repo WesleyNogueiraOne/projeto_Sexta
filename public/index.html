@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mural de Palavras Interativo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 0;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: linear-gradient(120deg, #3498db, #8e44ad);
+            color: #fff;
+            position: center;
+        }
+        .container {
+            max-width: auto;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            margin-top: 20px;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 30px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .mural {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .palavra {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        /* Efeito de iluminação no fundo */
+        .background-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 80%);
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-overlay"></div>
+    <div class="container">
+        <h1>Mural de Palavras</h1>
+        <input type="text" id="palavraInput" placeholder="Digite uma palavra">
+        <div id="mural" class="mural"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const input = document.getElementById('palavraInput');
+        const mural = document.getElementById('mural');
+
+        input.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' && input.value.trim() !== '') {
+                socket.emit('novaPalavra', input.value.trim());
+                input.value = '';
+            }
+        });
+
+        socket.on('atualizarMural', (palavra) => {
+            const span = document.createElement('span');
+            span.classList.add('palavra');
+            span.textContent = palavra;
+
+            // Posição inicial aleatória
+            let posX = Math.random() * (window.innerWidth - 100);
+            let posY = Math.random() * (window.innerHeight - 100);
+            span.style.left = `${posX}px`;
+            span.style.top = `${posY}px`;
+
+            mural.appendChild(span);
+
+            // Velocidade aleatória
+            let velocidadeX = (Math.random() * 2) + 1; // entre 1 e 3
+            let velocidadeY = (Math.random() * 2) + 1; // entre 1 e 3
+
+            // Função para mover a palavra e alterar direção ao atingir bordas
+            function moverPalavra() {
+                posX += velocidadeX;
+                posY += velocidadeY;
+
+                // Verifica colisão com as bordas
+                if (posX + span.offsetWidth >= window.innerWidth || posX <= 0) {
+                    velocidadeX *= -1; // inverte direção no eixo X
+                }
+                if (posY + span.offsetHeight >= window.innerHeight || posY <= 0) {
+                    velocidadeY *= -1; // inverte direção no eixo Y
+                }
+
+                // Atualiza a posição da palavra
+                span.style.left = `${posX}px`;
+                span.style.top = `${posY}px`;
+
+                requestAnimationFrame(moverPalavra);
+            }
+
+            moverPalavra(); // inicia o movimento
+        });
+    </script>
+</body>
+</html>
